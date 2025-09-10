@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
-import { UploadCloud, CheckCircle, FlaskConical, MapPin, LogOut, HelpCircle, LayoutDashboard } from 'lucide-react';
+import { UploadCloud, CheckCircle, FlaskConical, LogOut, HelpCircle, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TAXONOMY_DATA, PIPELINE_STEPS, PIE_CHART_COLORS } from '../constants';
 import { useLanguage } from '../App';
-import ChatBot from '../components/ChatBot'; // <-- Import the chatbot
+import ChatBot from '../components/ChatBot';
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -98,31 +99,69 @@ const TaxonomyPieChart = () => {
     );
 };
 
+// Dummy API function to simulate fetching biodiversity data
+const fetchBiodiversityLocations = () => {
+    return Promise.resolve([
+        { lat: -33.8688, lng: 151.2093, name: 'Sydney Coral', species: 120 },
+        { lat: 37.7749, lng: -122.4194, name: 'San Francisco Bay', species: 80 },
+        { lat: 19.4326, lng: -99.1332, name: 'Mexico City Lake', species: 60 },
+        { lat: 51.5074, lng: -0.1278, name: 'London Thames', species: 45 }
+    ]);
+};
+
+const mapContainerStyle = {
+    width: '100%',
+    height: '400px',
+    borderRadius: '1rem',
+    overflow: 'hidden'
+};
+
+const center = { lat: 20, lng: 0 };
+
 const WorldMap = () => {
     const { t } = useLanguage();
-    const locations = [ { x: '15%', y: '45%' }, { x: '55%', y: '25%' }, { x: '75%', y: '70%' }, { x: '25%', y: '75%' } ];
+    const { isLoaded } = useJsApiLoader({
+        googleMapsApiKey: 'YOUR_GOOGLE_MAPS_API_KEY' // <-- Replace with your key
+    });
+    const [locations, setLocations] = useState([]);
+
+    useEffect(() => {
+        fetchBiodiversityLocations().then(setLocations);
+    }, []);
+
+    if (!isLoaded) {
+        return <div className="bg-blue-900/30 rounded-lg p-8 text-cyan-300">Loading map...</div>;
+    }
+
     return (
         <motion.div variants={itemVariants} className="bg-slate-800/50 p-6 rounded-2xl">
             <h3 className="text-xl font-semibold mb-4 text-cyan-300">{t('samplingLocations')}</h3>
-            <div className="relative aspect-video bg-blue-900/30 rounded-lg overflow-hidden">
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
-                    <path d="M500,5 C223.86,5 5,223.86 5,500" fill="none" stroke="#2563eb" strokeWidth="1" transform="scale(1, 0.5) translate(0, 250)" />
-                    <path d="M500,5 C776.14,5 995,223.86 995,500" fill="none" stroke="#2563eb" strokeWidth="1" transform="scale(1, 0.5) translate(0, 250)" />
-                    {/* Simplified world map path */}
-                    <path d="M100 250 L150 200 L200 260 L250 180 L300 280 L350 220 L450 300 L500 200 L550 280 L650 200 L700 250 L750 180 L800 250 L850 200 L900 250" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
-                    <path d="M120 350 L180 320 L240 380 L300 300 L350 350 L400 300 L450 350 L500 300 L550 350 L600 300 L650 350 L700 300 L750 350 L800 300" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
-                </svg>
+            <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={center}
+                zoom={2}
+            >
                 {locations.map((loc, i) => (
-                    <motion.div key={i} className="absolute" style={{ top: loc.y, left: loc.x }}>
-                        <MapPin className="text-cyan-400" />
-                        <motion.div
-                            className="absolute top-1/2 left-1/2 w-4 h-4 bg-cyan-400 rounded-full"
-                            style={{ transform: 'translate(-50%, -50%)' }}
-                            animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                    </motion.div>
+                    <Marker
+                        key={i}
+                        position={{ lat: loc.lat, lng: loc.lng }}
+                        label={{
+                            text: `${loc.species}`,
+                            color: "#22d3ee",
+                            fontWeight: "bold",
+                            fontSize: "16px"
+                        }}
+                        title={`${loc.name}: ${loc.species} species`}
+                    />
                 ))}
+            </GoogleMap>
+            <div className="mt-4 text-sm text-cyan-200">
+                <strong>Biodiversity Data:</strong>
+                <ul>
+                    {locations.map((loc, i) => (
+                        <li key={i}>{loc.name}: {loc.species} species</li>
+                    ))}
+                </ul>
             </div>
         </motion.div>
     );
@@ -149,12 +188,11 @@ const ResearcherDashboard = () => {
                     <PipelineStepper />
                 </div>
                 <TaxonomyPieChart />
-                <WorldMap />
+                <WorldMap /> {/* <-- Google Map with biodiversity data */}
             </motion.main>
-            <ChatBot /> {/* <-- Add the chatbot here */}
+            <ChatBot />
         </div>
     );
 };
-
 
 export default ResearcherDashboard;
