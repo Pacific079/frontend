@@ -5,6 +5,7 @@ import { UploadCloud, CheckCircle, FlaskConical, MapPin, LogOut, HelpCircle, Lay
 import { Link, useNavigate } from 'react-router-dom';
 import { TAXONOMY_DATA, PIPELINE_STEPS, PIE_CHART_COLORS } from '../constants';
 import { useLanguage } from '../App';
+import ChatBot from '../components/ChatBot'; // <-- Import the chatbot
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -150,8 +151,10 @@ const ResearcherDashboard = () => {
                 <TaxonomyPieChart />
                 <WorldMap />
             </motion.main>
+            <ChatBot /> {/* <-- Add the chatbot here */}
         </div>
     );
 };
+
 
 export default ResearcherDashboard;
