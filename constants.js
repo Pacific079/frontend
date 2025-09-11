@@ -1,9 +1,8 @@
-
-import type { TaxonomyData, Species, FAQItem, Language } from './types';
+// import type { TaxonomyData, Species, FAQItem, Language } from './types';
 
 export const PIE_CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
-export const TAXONOMY_DATA: TaxonomyData[] = [
+export const TAXONOMY_DATA = [
   { name: 'Kingdom', value: 400 },
   { name: 'Phylum', value: 300 },
   { name: 'Class', value: 300 },
@@ -20,7 +19,7 @@ export const PIPELINE_STEPS = [
   'Report Generation',
 ];
 
-export const DUMMY_SPECIES: Species[] = [
+export const DUMMY_SPECIES = [
   { id: 1, name: 'Clownfish', class: 'Actinopterygii', description: 'Known for its bright orange color and symbiotic relationship with sea anemones.', imageUrl: 'https://picsum.photos/seed/clownfish/400/300' },
   { id: 2, name: 'Manta Ray', class: 'Elasmobranchii', description: 'The largest type of ray in the world, known for its graceful swimming.', imageUrl: 'https://picsum.photos/seed/mantaray/400/300' },
   { id: 3, name: 'Sea Turtle', class: 'Reptilia', description: 'Ancient mariners that navigate vast oceans and return to specific beaches to nest.', imageUrl: 'https://picsum.photos/seed/seaturtle/400/300' },
@@ -29,14 +28,15 @@ export const DUMMY_SPECIES: Species[] = [
   { id: 6, name: 'Blue Whale', class: 'Mammalia', description: 'The largest animal on Earth, feeding almost exclusively on tiny krill.', imageUrl: 'https://picsum.photos/seed/bluewhale/400/300' },
 ];
 
-export const FAQ_DATA: FAQItem[] = [
+export const FAQ_DATA = [
   { question: 'What is this platform for?', answer: 'This platform provides tools for marine biologists to analyze DNA data and for enthusiasts to explore marine species information.' },
   { question: 'How is the DNA data processed?', answer: 'We use a state-of-the-art deep learning pipeline to classify species based on their genetic markers, ensuring high accuracy and speed.' },
   { question: 'Where does the species data come from?', answer: 'Our species data is aggregated from peer-reviewed scientific journals, global biodiversity databases, and research expeditions.' },
   { question: 'Can I contribute to the data?', answer: 'Currently, data submission is limited to registered researchers to maintain data integrity. We may open public contributions in the future.' },
 ];
 
-export const I18N_STRINGS: Record<Language, Record<string, string>> = {
+// Language keys: 'en', 'hi'
+export const I18N_STRINGS = {
   en: {
     researcher: 'Researcher',
     user: 'User',
