@@ -112,6 +112,192 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 120 } },
 };
 
+// Chart Export Modal Component
+const ChartExportModal = ({ open, onClose, data, columns, name }) => {
+  // Export helpers
+  const exportJSON = () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onClose();
+  };
+
+  const exportCSV = () => {
+    const rows = [columns, ...data.map(item => columns.map(col => item[col]))];
+    const csvContent = rows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onClose();
+  };
+
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data, { header: columns });
+    XLSX.utils.book_append_sheet(wb, ws, name);
+    XLSX.writeFile(wb, `${name}.xlsx`);
+    onClose();
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(name, 10, 10);
+    let y = 20;
+    data.forEach(item => {
+      doc.text(columns.map(col => `${col}: ${item[col]}`).join(', '), 10, y);
+      y += 10;
+    });
+    doc.save(`${name}.pdf`);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-slate-900 rounded-xl p-8 shadow-2xl flex flex-col gap-4 min-w-[300px]"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+          >
+            <h3 className="text-xl font-bold text-cyan-300 mb-2">Export {name}</h3>
+            <button onClick={exportJSON} className="px-6 py-3 bg-cyan-500 rounded-lg text-white font-bold shadow-lg hover:bg-cyan-400">Export JSON</button>
+            <button onClick={exportCSV} className="px-6 py-3 bg-green-500 rounded-lg text-white font-bold shadow-lg hover:bg-green-400">Export CSV</button>
+            <button onClick={exportExcel} className="px-6 py-3 bg-yellow-500 rounded-lg text-white font-bold shadow-lg hover:bg-yellow-400">Export Excel</button>
+            <button onClick={exportPDF} className="px-6 py-3 bg-red-500 rounded-lg text-white font-bold shadow-lg hover:bg-red-400">Export PDF</button>
+            <button onClick={onClose} className="mt-2 text-cyan-300 underline hover:text-cyan-200">Cancel</button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Visualization Panel Component
+const VisualizationPanel = ({
+  taxonomyData,
+  phyloData,
+  biodiversityMetric,
+  biodiversityLocations
+}) => {
+  const [activeTab, setActiveTab] = useState('taxonomy');
+  const [exportModal, setExportModal] = useState({ open: false, data: null, columns: null, name: '' });
+
+  const tabConfig = {
+    taxonomy: {
+      label: 'Taxonomic Classification',
+      graph: (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={taxonomyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" stroke="#22d3ee" />
+            <YAxis stroke="#22d3ee" />
+            <Tooltip />
+            <Bar dataKey="value" fill="#22d3ee" barSize={20} />
+          </BarChart>
+        </ResponsiveContainer>
+      ),
+      data: taxonomyData,
+      columns: ['name', 'value'],
+    },
+    phylo: {
+      label: 'Phylogenetic Analysis',
+      graph: (
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie data={phyloData} dataKey="value" nameKey="group" cx="50%" cy="50%" outerRadius={80} label>
+              {phyloData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index % 4]} />
+              ))}
+            </Pie>
+            <Legend wrapperStyle={{ color: '#fff' }}/>
+          </PieChart>
+        </ResponsiveContainer>
+      ),
+      data: phyloData,
+      columns: ['group', 'value'],
+    },
+    biodiversity: {
+      label: 'Biodiversity Metric',
+      graph: (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={biodiversityMetric}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="location" stroke="#22d3ee" />
+            <YAxis stroke="#22d3ee" />
+            <Tooltip />
+            <Bar dataKey="metric" fill="#22d3ee" barSize={20} />
+          </BarChart>
+        </ResponsiveContainer>
+      ),
+      data: biodiversityMetric,
+      columns: ['location', 'metric'],
+    },
+  };
+
+  const current = tabConfig[activeTab];
+
+  return (
+    <div className="flex gap-8 mx-8 mb-8">
+      {/* Charts left */}
+      <div className="flex-1 flex flex-col gap-6">
+        <div className="bg-slate-800/50 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex gap-2">
+              {Object.entries(tabConfig).map(([key, tab]) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${
+                    activeTab === key
+                      ? 'bg-cyan-500 text-white'
+                      : 'bg-slate-700 text-cyan-300 hover:bg-cyan-600 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setExportModal({ open: true, data: current.data, columns: current.columns, name: current.label.replace(/\s/g, '_') })}
+              className="px-4 py-2 bg-cyan-500 rounded font-bold text-white hover:bg-cyan-400"
+            >
+              Export
+            </button>
+          </div>
+          <div className="w-full">{current.graph}</div>
+        </div>
+      </div>
+      {/* Map right */}
+      <div className="flex-1 min-w-[350px] max-w-[500px]">
+        <WorldMap biodiversityLocations={biodiversityLocations} />
+      </div>
+      <ChartExportModal
+        open={exportModal.open}
+        onClose={() => setExportModal({ ...exportModal, open: false })}
+        data={exportModal.data}
+        columns={exportModal.columns}
+        name={exportModal.name}
+      />
+    </div>
+  );
+};
+
 const Navbar = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -288,160 +474,6 @@ const WorldMap = ({ biodiversityLocations }) => {
         </ul>
       </div>
     </motion.div>
-  );
-};
-
-// Visualization Tabs
-const VisualizationTabs = ({
-  taxonomyData,
-  phyloData,
-  biodiversityMetric,
-}) => {
-  const [activeTab, setActiveTab] = useState('taxonomy');
-
-  const tabConfig = {
-    taxonomy: {
-      label: 'Taxonomic Classification',
-      graph: (
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={taxonomyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" stroke="#22d3ee" />
-            <YAxis stroke="#22d3ee" />
-            <Tooltip />
-            <Bar dataKey="value" fill="#22d3ee" />
-          </BarChart>
-        </ResponsiveContainer>
-      ),
-      data: taxonomyData,
-      columns: ['name', 'value'],
-    },
-    phylo: {
-      label: 'Phylogenetic Analysis',
-      graph: (
-        <ResponsiveContainer width="100%" height={320}>
-          <PieChart>
-            <Pie data={phyloData} dataKey="value" nameKey="group" cx="50%" cy="50%" outerRadius={100} label>
-              {phyloData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index % 4]} />
-              ))}
-            </Pie>
-            <Legend wrapperStyle={{ color: '#fff' }}/>
-          </PieChart>
-        </ResponsiveContainer>
-      ),
-      data: phyloData,
-      columns: ['group', 'value'],
-    },
-    biodiversity: {
-      label: 'Biodiversity Metric',
-      graph: (
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={biodiversityMetric}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="location" stroke="#22d3ee" />
-            <YAxis stroke="#22d3ee" />
-            <Tooltip />
-            <Bar dataKey="metric" fill="#22d3ee" />
-          </BarChart>
-        </ResponsiveContainer>
-      ),
-      data: biodiversityMetric,
-      columns: ['location', 'metric'],
-    },
-  };
-
-  // Export helpers
-  const exportJSON = (data, name) => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportCSV = (data, columns, name) => {
-    const rows = [columns, ...data.map(item => columns.map(col => item[col]))];
-    const csvContent = rows.map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportExcel = (data, columns, name) => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(data, { header: columns });
-    XLSX.utils.book_append_sheet(wb, ws, name);
-    XLSX.writeFile(wb, `${name}.xlsx`);
-  };
-
-  const exportPDF = (data, columns, name) => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(name, 10, 10);
-    let y = 20;
-    data.forEach(item => {
-      doc.text(columns.map(col => `${col}: ${item[col]}`).join(', '), 10, y);
-      y += 10;
-    });
-    doc.save(`${name}.pdf`);
-  };
-
-  const current = tabConfig[activeTab];
-
-  return (
-    <div className="bg-slate-800/50 rounded-xl p-6 mb-8 mx-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          {Object.entries(tabConfig).map(([key, tab]) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${
-                activeTab === key
-                  ? 'bg-cyan-500 text-white'
-                  : 'bg-slate-700 text-cyan-300 hover:bg-cyan-600 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => exportJSON(current.data, current.label.replace(/\s/g, '_'))}
-            className="px-3 py-1 bg-cyan-500 rounded text-white text-xs font-bold hover:bg-cyan-400"
-          >
-            JSON
-          </button>
-          <button
-            onClick={() => exportCSV(current.data, current.columns, current.label.replace(/\s/g, '_'))}
-            className="px-3 py-1 bg-green-500 rounded text-white text-xs font-bold hover:bg-green-400"
-          >
-            CSV
-          </button>
-          <button
-            onClick={() => exportExcel(current.data, current.columns, current.label.replace(/\s/g, '_'))}
-            className="px-3 py-1 bg-yellow-500 rounded text-white text-xs font-bold hover:bg-yellow-400"
-          >
-            Excel
-          </button>
-          <button
-            onClick={() => exportPDF(current.data, current.columns, current.label.replace(/\s/g, '_'))}
-            className="px-3 py-1 bg-red-500 rounded text-white text-xs font-bold hover:bg-red-400"
-          >
-            PDF
-          </button>
-        </div>
-      </div>
-      <div className="w-full h-80">{current.graph}</div>
-    </div>
   );
 };
 
@@ -661,7 +693,6 @@ const ResearcherDashboard = () => {
   const [phyloData, setPhyloData] = useState([]);
   const [biodiversityMetric, setBiodiversityMetric] = useState([]);
 
-  // Fetch all data from backend (dummy APIs here)
   useEffect(() => {
     fetchTaxonomyData().then(setTaxonomyData);
     fetchPipelineSteps().then(setPipelineSteps);
@@ -671,7 +702,6 @@ const ResearcherDashboard = () => {
     fetchBiodiversityMetric().then(setBiodiversityMetric);
   }, []);
 
-  // Collect all data for export
   const exportData = {
     taxonomyData,
     pipelineSteps,
@@ -680,7 +710,6 @@ const ResearcherDashboard = () => {
     history
   };
 
-  // Add upload history
   const handleHistoryAdd = (entry) => {
     setHistory(prev => [entry, ...prev]);
   };
@@ -702,26 +731,24 @@ const ResearcherDashboard = () => {
           </div>
           <PipelineStepper pipelineSteps={pipelineSteps} />
         </div>
-        <WorldMap biodiversityLocations={biodiversityLocations} />
       </motion.main>
-      <div className="flex flex-col gap-0">
-        <VisualizationTabs
-          taxonomyData={taxonomyData}
-          phyloData={phyloData}
-          biodiversityMetric={biodiversityMetric}
-        />
-        <KeyInsight sampleResults={sampleAnalysisResults} />
-        <SpeciesAbundanceBar sampleResults={sampleAnalysisResults} />
-        <SampleAnalysisResults results={sampleAnalysisResults} />
-        <div className="flex justify-start mx-8 mb-8">
-          <button
-            onClick={() => setExportOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-cyan-500 rounded-lg text-white font-bold shadow-lg hover:bg-cyan-400 transition-all duration-300"
-          >
-            <Download size={20} />
-            Export All
-          </button>
-        </div>
+      <VisualizationPanel
+        taxonomyData={taxonomyData}
+        phyloData={phyloData}
+        biodiversityMetric={biodiversityMetric}
+        biodiversityLocations={biodiversityLocations}
+      />
+      <KeyInsight sampleResults={sampleAnalysisResults} />
+      <SpeciesAbundanceBar sampleResults={sampleAnalysisResults} />
+      <SampleAnalysisResults results={sampleAnalysisResults} />
+      <div className="flex justify-start mx-8 mb-8">
+        <button
+          onClick={() => setExportOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-cyan-500 rounded-lg text-white font-bold shadow-lg hover:bg-cyan-400 transition-all duration-300"
+        >
+          <Download size={20} />
+          Export All
+        </button>
       </div>
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} data={exportData} />
       <div className="fixed bottom-0 right-0 z-[101]">
