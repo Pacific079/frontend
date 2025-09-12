@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, LayoutDashboard, Languages } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FAQ_DATA } from '../constants';
 import { useLanguage } from '../App';
+import ChatBot from '../components/ChatBot';
 
 // Navbar Component
 const Navbar = () => {
@@ -19,10 +20,25 @@ const Navbar = () => {
         <header className="bg-slate-900/80 backdrop-blur-md p-4 flex justify-between items-center sticky top-0 z-50 shadow-lg shadow-blue-500/10">
             <div className="text-2xl font-bold text-cyan-400">Aqua-Genix</div>
             <nav className="flex items-center gap-6">
-                <Link to="/researcher/dashboard" className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"><LayoutDashboard size={20}/> Researcher</Link>
-                <Link to="/user/dashboard" className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"><LayoutDashboard size={20}/> User</Link>
-                <button onClick={toggleLanguage} className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"><Languages size={20}/> {t('langToggle')}</button>
-                <button onClick={() => navigate('/')} className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"><LogOut size={20}/> {t('logout')}</button>
+                <Link
+                    to="/researcher/dashboard"
+                    className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
+                >
+                    <LayoutDashboard size={20}/> Researcher
+                </Link>
+                
+                <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
+                >
+                    <Languages size={20}/> {t('langToggle')}
+                </button>
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
+                >
+                    <LogOut size={20}/> {t('logout')}
+                </button>
             </nav>
         </header>
     );
@@ -93,6 +109,9 @@ const HelpPage = () => {
                     ))}
                 </div>
             </motion.main>
+
+            {/* 👇 ChatBot floating assistant */}
+            <ChatBot />
         </div>
     );
 };
